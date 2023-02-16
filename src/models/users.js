@@ -1,38 +1,51 @@
-const dbPool = require("../config/database")
+const { DataTypes, QueryTypes } = require('sequelize')
 
-const getAllUsers = () => {
-    const sql = "SELECT*FROM USERS"
+const dbSequilize = require("../config/database")
 
-    return dbPool.execute(sql)
+const Users = dbSequilize.define('users', {
+    uuid: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    name: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    username: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    email: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    address: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+}, {
+    freezeTableName: true,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
+})
+
+const getUserById = async (id) => {
+    const sql = `SELECT * FROM USERS WHERE UUID = '${id}'`
+    const [results] = await dbSequilize.query(sql, {
+        type: QueryTypes.SELECT
+    });
+
+    return results
 }
 
-const createNewUser = (body) => {
-    const sql = `INSERT INTO USERS (NAME,EMAIL,ADDRESS) VALUES ('${body.name}','${body.email}','${body.address}')`
+Users.removeAttribute('id');
 
-    return dbPool.execute(sql)
-}
-
-const checkUser = (id) => {
-    const sql = `SELECT ID FROM USERS WHERE ID = '${id}'`
-
-    return dbPool.execute(sql)
-}
-
-const updateUser = (body, id) => {
-    const sql = `UPDATE USERS SET NAME='${body.name}',EMAIL='${body.email}',ADDRESS='${body.address}' WHERE  ID = ${id}`
-
-    return dbPool.execute(sql)
-}
-
-const deleteUser = (id) => {
-    const sql = `DELETE FROM USERS WHERE ID = ${id}`
-
-    return dbPool.execute(sql)
-}
 module.exports = {
-    getAllUsers,
-    createNewUser,
-    updateUser,
-    checkUser,
-    deleteUser
+    Users,
+    getUserById
 }
