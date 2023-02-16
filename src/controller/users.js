@@ -18,31 +18,71 @@ const getAllUsers = async (req, res) => {
 
 }
 
-const createNewUser = (req, res) => {
-    res.json({
-        msg: "Create new user success",
-        data: req.body
-    })
+const createNewUser = async (req, res) => {
+    const { body } = req
+    try {
+        await userModel.createNewUser(body)
+
+        res.json({
+            msg: "Create new user success",
+            data: body
+        })
+    } catch (error) {
+        res.status(500).json({
+            msg: "Server error",
+            serverMessage: error
+        })
+    }
 }
 
-const updateUser = (req, res) => {
+const updateUser = async (req, res) => {
     const { id } = req.params
-    res.json({
-        msg: "Update user success",
-        data: req.body
-    })
-}
-
-const deleteUser = (req, res) => {
-    const { id } = req.params
-    res.json({
-        msg: "Delete user success",
-        data: {
-            id: id,
-            name: "dikta delete",
-            email: "delet email"
+    const { body } = req
+    try {
+        const [userExist] = await userModel.checkUser(id)
+        if (userExist.length == 0) {
+            return res.status(404).json({
+                msg: `Data ${id} not found`
+            })
         }
-    })
+        await userModel.updateUser(body, id)
+        res.json({
+            msg: "Update user success",
+            data: {
+                id: id,
+                ...body
+            }
+        })
+    } catch (error) {
+        res.status(500).json({
+            msg: "Server error",
+            serverMessage: error
+        })
+    }
+
+}
+
+const deleteUser = async (req, res) => {
+    const { id } = req.params
+    try {
+        const [userExist] = await userModel.checkUser(id)
+        if (userExist.length == 0) {
+            return res.status(404).json({
+                msg: `Data ${id} not found`
+            })
+        }
+
+        await userModel.deleteUser(id)
+        res.json({
+            msg: `Delete user ${id} success`
+        })
+    } catch (error) {
+        res.status(500).json({
+            msg: "Server error",
+            serverMessage: error
+        })
+    }
+
 }
 
 module.exports = {
