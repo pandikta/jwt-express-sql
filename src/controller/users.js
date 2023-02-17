@@ -135,6 +135,7 @@ const loginUser = async (req, res) => {
             expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         });
 
+
         // save refresh token in remember_token coloumn
         let rememberToken = await userModel.Users.update({ remember_token: refreshToken }, {
             where: {
