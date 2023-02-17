@@ -1,12 +1,13 @@
 require('dotenv').config()
 const PORT = process.env.PORT || 5000
 const express = require("express")
-
+const cookieParser = require('cookie-parser');
 const usersRoutes = require("./routes/users.js")
 const middlewareLogReq = require("./middleware/logs")
 const upload = require('./middleware/multer.js')
 const app = express()
 
+app.use(cookieParser());
 
 app.use(middlewareLogReq)
 app.use(express.json())

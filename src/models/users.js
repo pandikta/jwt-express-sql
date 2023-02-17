@@ -21,11 +21,15 @@ const Users = dbSequilize.define('users', {
     },
     email: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
     address: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
+    },
+    remember_token: {
+        type: DataTypes.STRING,
+        allowNull: true
     }
 }, {
     freezeTableName: true,

@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const uuid = uuidv4();
 const helper = require('../utils/index')
 const bcrypt = require('bcrypt')
-
+const jwt = require('jsonwebtoken')
 
 const getAllUsers = async (req, res) => {
     try {
@@ -121,9 +121,32 @@ const loginUser = async (req, res) => {
                 msg: "Wrong Password !"
             })
         }
+
+        let expiresIn = 15 * 60 //15 minute
+        const token = jwt.sign({ username: data.username, name: data.name, email: data.email }, process.env.JWT_SECRET, { expiresIn });
+        const refreshToken = jwt.sign({ username: data.username, name: data.name, email: data.email }, process.env.JWT_SECRET_REFRESH, {
+            expiresIn: '7d',
+        });
+
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            // secure: true,
+            sameSite: 'strict',
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        });
+
+        // save refresh token in remember_token coloumn
+        let rememberToken = await userModel.Users.update({ remember_token: refreshToken }, {
+            where: {
+                username: req.body.username
+            }
+        });
+
         res.json({
             msg: "Login Success",
-            data: data
+            data: data,
+            accessToken: token,
+            // refreshToken: refreshToken
         })
     } catch (error) {
         res.status(500).json({
@@ -155,7 +178,7 @@ const changePassword = async (req, res) => {
         );
 
         if (!passwordIsValid) {
-            return res.status(404).json({
+            return res.status(401).json({
                 msg: `Wrong password`
             })
         }
@@ -167,7 +190,7 @@ const changePassword = async (req, res) => {
         }
 
         let passwordHash = await helper.hashPassword(req.body.newPassword)
-        let user = await userModel.Users.update({ password: passwordHash }, {
+        let update = await userModel.Users.update({ password: passwordHash }, {
             where: {
                 username: username
             }
@@ -189,13 +212,35 @@ const updateUser = async (req, res) => {
     const { id } = req.params
     const { body } = req
     try {
-        const [userExist] = await userModel.checkUser(id)
-        if (userExist.length == 0) {
+        let data = await userModel.Users.findOne({
+            where: {
+                uuid: id
+            }
+        })
+
+        if (data == null) {
             return res.status(404).json({
-                msg: `Data ${id} not found`
+                msg: `Username doesn't exist`
             })
         }
-        await userModel.updateUser(body, id)
+
+        if (body.email == '' || body.username == '' || body.name == '') return res.status(406).json({
+            msg: "Update failed"
+        })
+
+        let update = await userModel.Users.update(
+            {
+                username: body.username,
+                email: body.email,
+                address: body.address,
+                name: body.name
+            },
+            {
+                where: {
+                    uuid: id
+                }
+            });
+
         res.json({
             msg: "Update user success",
             data: {
@@ -239,6 +284,28 @@ const deleteUser = async (req, res) => {
 
 }
 
+const logout = async (req, res) => {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+        return res.status(401).json({ message: 'Refresh token not found' });
+    }
+
+    try {
+        // hapus refresh token dari database
+        await userModel.Users.update({ remember_token: null }, {
+            where: { remember_token: refreshToken }
+        });
+
+        // hapus cookie refresh token
+        res.clearCookie('refreshToken');
+
+        return res.status(200).json({ message: 'Logout success' });
+    } catch (error) {
+        return res.status(500).json({ message: 'Internal server error', err: error.message });
+    }
+}
+
 module.exports = {
     getAllUsers,
     register,
@@ -246,5 +313,6 @@ module.exports = {
     deleteUser,
     getUserById,
     loginUser,
-    changePassword
+    changePassword,
+    logout
 }
