@@ -16,7 +16,6 @@ Install the required dependencies using the following command:
 
 bash
 ```
-Copy code
 npm install
 ```
 Copy the .env.example file to .env and update the environment variables as needed.
@@ -25,7 +24,6 @@ Start the server by running the following command:
 
 bash
 ```
-Copy code
 npm start
 ```
 Usage
